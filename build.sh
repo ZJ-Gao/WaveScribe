@@ -17,6 +17,9 @@ if [ ! -f Vendor/sherpa-onnx/lib/libsherpa-onnx-c-api.dylib ]; then
 fi
 mkdir -p "$APP/Contents/Frameworks"
 cp Vendor/sherpa-onnx/lib/libsherpa-onnx-c-api.dylib Vendor/sherpa-onnx/lib/libonnxruntime.dylib "$APP/Contents/Frameworks/"
+# Sparkle (in-app updates). The app is not sandboxed, so Sparkle's XPC services are not needed.
+ditto .build/release/Sparkle.framework "$APP/Contents/Frameworks/Sparkle.framework"
+rm -rf "$APP/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices" "$APP/Contents/Frameworks/Sparkle.framework/XPCServices"
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -31,6 +34,10 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 <key>CFBundleVersion</key><string>${VERSION:-0.1}</string>
 <key>LSMinimumSystemVersion</key><string>15.0</string>
 <key>LSUIElement</key><true/>
+<key>SUFeedURL</key><string>https://raw.githubusercontent.com/ZJ-Gao/WaveScribe/main/appcast.xml</string>
+<key>SUPublicEDKey</key><string>xUIaDeeiBgzklhBqk9RrfMDeZz4XQ+OY192kK/gch8k=</string>
+<key>SUEnableAutomaticChecks</key><true/>
+<key>SUScheduledCheckInterval</key><integer>86400</integer>
 <key>NSMicrophoneUsageDescription</key><string>声波转存需要麦克风来把你的语音转成文字。</string>
 </dict></plist>
 PLIST
@@ -40,6 +47,9 @@ IDENTITY="${SIGN_IDENTITY:-$(security find-identity -v -p codesigning | awk -F'"
 # With a certificate: hardened runtime. Without one (ad-hoc), skip it: its library validation would refuse
 # to load the ad-hoc-signed punctuation libraries.
 if [ -n "$IDENTITY" ] && [ "$IDENTITY" != "-" ]; then RUNTIME=(--options runtime --timestamp); else IDENTITY="-"; RUNTIME=(); fi
+SPK="$APP/Contents/Frameworks/Sparkle.framework"
+codesign --force "${RUNTIME[@]}" -s "$IDENTITY" "$SPK/Versions/B/Autoupdate" "$SPK/Versions/B/Updater.app"
+codesign --force "${RUNTIME[@]}" -s "$IDENTITY" "$SPK"
 codesign --force "${RUNTIME[@]}" -s "$IDENTITY" "$APP"/Contents/Frameworks/*.dylib
 codesign --force "${RUNTIME[@]}" --entitlements /dev/stdin -s "$IDENTITY" "$APP" <<ENT
 <?xml version="1.0" encoding="UTF-8"?>

@@ -3,6 +3,7 @@ import FluidAudio
 import AppKit
 import SwiftUI
 import AVFoundation
+import Sparkle
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
@@ -14,6 +15,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     var toggleItem: NSMenuItem?
     var prefsWindow: NSWindow?
     var testWindow: NSWindow?
+    /// Checks the appcast (SUFeedURL in Info.plist) once a day and offers to install new versions.
+    /// Only in the packaged app: a bare .build binary has no Info.plist to read the feed from.
+    let updater: SPUStandardUpdaterController? = Bundle.main.bundleURL.pathExtension == "app"
+        ? SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil) : nil
+
+    @objc func checkForUpdates() {
+        if let updater { updater.checkForUpdates(nil) }
+        else { NSWorkspace.shared.open(URL(string: "https://github.com/ZJ-Gao/WaveScribe/releases/latest")!) }
+    }
 
     func applicationDidFinishLaunching(_ note: Notification) {
         state = AppState()
@@ -28,6 +38,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         menu.addItem(.separator())
         menu.addItem(withTitle: "偏好设置…", action: #selector(openPreferences), keyEquivalent: ",")
         menu.addItem(withTitle: "打开数据文件夹", action: #selector(openData), keyEquivalent: "")
+        menu.addItem(withTitle: "检查更新…", action: #selector(checkForUpdates), keyEquivalent: "")
         menu.addItem(withTitle: "退出", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         for item in menu.items where item.action != #selector(NSApplication.terminate(_:)) { item.target = self }
         statusItem.menu = menu

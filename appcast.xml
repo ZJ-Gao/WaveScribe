@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+  <channel>
+    <title>WaveScribe</title>
+    <item>
+      <title>WaveScribe 0.1.0</title>
+      <pubDate>Fri, 06 Nov 2026 16:51:25 -0600</pubDate>
+      <sparkle:version>0.1.0</sparkle:version>
+      <sparkle:shortVersionString>0.1.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<p>第一个公开版本</p>]]></description>
+      <enclosure url="https://github.com/ZJ-Gao/WaveScribe/releases/download/v0.1.0/WaveScribe.zip" sparkle:edSignature="hJetK3YqpOHo3HhEDiYBO7Ek7oUuqGJ5dxGOPuu0A1lDZ/gYgmMl6TFfhEW21m9+50C4s5vb8783jwheTnzwDw==" length="20447255" type="application/octet-stream"/>
+    </item>
+  </channel>
+</rss>

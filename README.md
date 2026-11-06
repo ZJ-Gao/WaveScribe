@@ -1,22 +1,40 @@
+<div align="center">
+
+<img src="Assets/icon-1024.png" width="120" alt="WaveScribe 图标">
+
 # WaveScribe 声波转存
 
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-![Platform](https://img.shields.io/badge/macOS-15%2B-black?logo=apple)
-![Apple Silicon](https://img.shields.io/badge/Apple%20Silicon-M%20系列-orange)
-![Offline](https://img.shields.io/badge/识别-完全本地-brightgreen)
-[![Release](https://img.shields.io/github/v/release/ZJ-Gao/WaveScribe)](../../releases)
+**Mac 上的本地语音转文字工具，为普通话和中英混说优化**
 
-一个 macOS 菜单栏听写工具，针对**以普通话为主、偶尔中英夹杂**的口语做了优化，识别全部在本机完成。
+按一下快捷键说话，文字直接出现在光标处。识别全部在本机完成，免费、开源，小内存、快响应。
 
-这个仓库同时是一份实验记录。我们在一台 16GB 内存的 M3 MacBook 上比较了几种开源语音识别模型和后处理方案，目标是用尽量小的内存占用，换到尽量快、尽量准的中文听写。下面的配置、测试数据和踩过的坑都写在这里，希望对想自己搭本地中文听写的人有参考价值。
+[![Release](https://img.shields.io/github/v/release/ZJ-Gao/WaveScribe?style=flat-square&label=下载&color=2ea44f)](../../releases/latest)
+![macOS](https://img.shields.io/badge/macOS-15%2B-000000?style=flat-square&logo=apple&logoColor=white)
+![Apple Silicon](https://img.shields.io/badge/Apple_Silicon-M_系列-FF6F00?style=flat-square)
+![Offline](https://img.shields.io/badge/识别-完全本地-0A84FF?style=flat-square)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
 
-**和商业听写产品比**：Wispr Flow 这类商业产品的识别通常更准一些，还会用大语言模型帮你润色句子、整理格式，技术上确实更成熟。WaveScribe 不做润色，只求把你说的话尽量原样、准确地转出来；它完全免费、开源，离线可用，出字快，内存占用也小。
+[安装](#安装) · [使用](#使用) · [和商业产品比较](#和商业产品比较) · [内存与速度](#内存与速度) · [从源码编译](#从源码编译开发者)
+
+</div>
+
+![image-20261106164123411](/Users/zijiegao/Library/Application Support/typora-user-images/image-20261106164123411.png)
+
+
 
 <!-- 截图：菜单栏图标、录音浮窗、历史窗口 -->
 
+WaveScribe 是一个 macOS 菜单栏上的语音输入（听写）工具，默认用阿里的千问 3 ASR 模型，适合以普通话为主、偶尔夹几个英文词的口语；全英文时可以切换到 Whisper。
+
+- **简单**：下载、拖进"应用程序"、授权两次，就能用。
+- **快**：边说边转，停止录音后通常 1 秒内出字。
+- **省内存**：只在用的时候加载模型，闲置 1 分钟就释放。
+
+想了解模型怎么选、怎么配置才能又快又省内存，见[实验记录](docs/实验记录.md)。
+
 ## 功能
 
-- **快捷键听写**：默认 ⌥ 空格 开始，再按一次结束；录音中按 Esc 取消。快捷键可在偏好设置里改成别的组合键，也可以只用一个修饰键（比如单独按一下 ⌥）；还可以改成"按住说话，松开结束"。
+- **快捷键语音输入**：默认 ⌥ 空格 开始，再按一次结束；录音中按 Esc 取消。快捷键可在偏好设置里改成别的组合键，也可以只用一个修饰键（比如单独按一下 ⌥）；还可以改成"按住说话，松开结束"。
 - **直接输入到光标处**：通过辅助功能接口插入文字，不占用剪贴板；插入失败时改为粘贴，并在之后恢复原来的剪贴板内容。没有可输入的位置时，弹出小窗显示文字，可一键复制。
 - **录音浮窗**：录音时显示浮窗，转写时显示一只每秒敲一下的木鱼（可在偏好设置里换成普通的转圈）。麦克风没有声音时，大约 1 秒内会提示。
 - **边说边转**：在你说话的停顿处切段，前面的段落在你继续说话时就开始转写。停止录音后，通常 1 秒内出字。
@@ -35,22 +53,28 @@
 4. 第一次启动会自动下载模型（约 750MB），菜单栏图标会显示下载进度。下载完成后完全离线使用。
 5. 在任意可以打字的地方，按 ⌥ 空格 开始说话，再按一次结束，文字会直接出现在光标处。
 
-**更新**：下载新版本，替换"应用程序"里的旧版即可。历史记录和设置会保留。
+> [!TIP]
+> 如果单独按 ⌥ 这类快捷键没有反应，多半是辅助功能权限没开，或者更新后失效了。到"系统设置 → 隐私与安全性 → 辅助功能"里把 WaveScribe 关掉再打开即可。
+
+**更新**：WaveScribe 每天自动检查一次更新，有新版本时会弹窗提示，点一下就能安装并重启；也可以在菜单栏图标里点"检查更新…"。历史记录和设置会保留。
 
 **卸载**：删除"应用程序"里的 WaveScribe，再删除 `~/Library/Application Support/WaveScribe`（里面是模型和历史记录）。
 
-## 处理流程
+## 使用
 
-1. **录音**：16 kHz 单声道。
-2. **切段**：用 Silero VAD 找停顿，在停顿处把录音切成小段，每段不超过 25 秒。
-3. **转写**：每段交给千问 3 ASR（0.6B，4-bit，MLX）。前面的段落在你说话时就已转好。
-4. **拼接**：把各段文字连起来。
-5. **重新加标点**：用 CT-Transformer 标点模型按整段意思重新加标点。这一步只允许改标点：去掉标点后只要有一个字和原文不同，就丢弃结果、保留原文。3:30、3.5 这类数字原样保留。
-6. **格式整理**：中文用全角标点，英文用半角标点，中文字之间不留空格。
-7. **替换规则**：应用你自己设定的替换规则。
-8. **插入**：把文字插入光标处。
+- **偏好设置**（菜单栏图标 → 偏好设置）：
+  - **快捷键**：可以是组合键（至少一个修饰键），也可以单独按一下 ⌃ ⌥ ⇧ ⌘ 中的一个；F1 到 F12 可以单独使用。
+  - **触发方式**：按一下开始、再按一下结束，或者按住说话、松开结束。
+  - **识别模型**：千问（中文、中英混说）或 Whisper（全英文）。
+  - **录音保留**：见下文"数据与隐私"。
+- **词汇表**：`vocabulary.txt`，每行一个词。转写时会提示给模型，适合专业术语和人名。也可以在历史记录里修改文字后，从建议里添加。
+- **替换规则**：`rules.json`，在历史记录里修改文字后生成，用于固定纠正某个反复出现的错误。
 
-Whisper 模式多一步：每段先判断语言再转写。如果开头 2 秒听起来像英文，会用整段再判断一次，因为把中文语音按英文解码时，Whisper 会直接输出英文译文。
+## 和商业产品比较
+
+Wispr Flow 这类商业语音输入产品做得很好：识别准，出字快，还会用大语言模型帮你润色句子、整理格式。
+
+WaveScribe 走的是另一条路：识别全部在你的电脑上完成，不做润色，只求把你说的话尽量原样、准确地转出来。它免费、开源，出字快，内存占用也小。
 
 ## 内存与速度
 
@@ -68,40 +92,9 @@ Whisper 模式多一步：每段先判断语言再转写。如果开头 2 秒听
 - **用时才加载**：按下快捷键就开始从硬盘读模型（约 2 秒），和你说话同时进行，所以通常感觉不到。
 - **闲置 1 分钟后卸载**：只是从内存清掉，硬盘上的模型文件不动，不需要重新下载。
 
-## 我们试过的方案
-
-**测试材料**：
-- 10 条真实听写，约 7 分钟，参考答案由作者手动校对。
-- 5 句朗读的中文测试句、5 句英文测试句，参考答案就是原文。
-
-**计分方法**：按字计算错误率（CER），忽略标点和大小写。
-
-**注意**：真实听写的参考答案是在 Whisper 的输出上修改得到的，这对 Whisper 有利；而且样本很少。下面的数字只说明大致趋势，不是严格的评测。
-
-| 方案 | 结果 | 结论 |
-|---|---|---|
-| Whisper large-v3 turbo（WhisperKit） | 10 条听写错误率 12.8%；5 句中文朗读错 7 处 | 英文好；中文同音字错得较多（服装/浮窗、闺女/规律、清洗/亲戚、股权/补全）；停止后要等 2.5 秒以上 |
-| SenseVoice-Small int8（sherpa-onnx） | 14.9%（2024-07-17 版）、17.2%（2025-09-09 版） | 部分同音字比 Whisper 准，但英文术语差（如 MacBook 写成 MATBOOK），会保留语气词；2025 版把普通话录音全部判成了粤语 |
-| Paraformer-zh（2023-09-14，sherpa-onnx） | 14.8% | 中文和 Whisper 接近，错误多是"他/它"一类；中英夹杂的术语明显差；长录音不切段时效果下降 |
-| **千问 3 ASR 0.6B（MLX）** | 10 条听写 13.9%；不计语气词和"他/她/它""的/得"后，中文 7.2%（Whisper 8.2%）；5 句中文朗读只错 1 处 | 上面 Whisper 错的同音字基本都对了，速度最快，**最终采用** |
-| 千问 3 ASR 1.7B | 中文 8.1% | 没有比 0.6B 更准，速度慢 2 到 3 倍，没有采用 |
-| 小型 LLM 纠错（Qwen3 1.7B / 4B，MLX） | 1.7B 一个字都没改；4B 让错误率从 12.8% 升到 13.4% | 4B 会改写措辞（如闺女改成女儿、吃食改成饮食），真正的同音错字反而没找到，每次还多等 0.6 到 2.6 秒，**放弃** |
-
-**英文**：5 句英文测试里，千问和 Whisper 的表现接近。千问把 turbidity currents 听成 tibetan currents，Whisper 听成 turbidate currents，两者都不熟悉这类专业词。千问更快，所以日常英文用默认模式也可以。
-
-**标点**：Whisper 自己加的标点里，句号偏多，常把半句话断开。换成专门的 CT-Transformer 标点模型后，句中多余的句号明显减少；偶尔会在长句里少加逗号。
-
-## 踩过的坑
-
-- **Whisper 把中文"翻译"成英文**：如果只听每段开头 2 秒判断语言，常会把中文误判成英文；而用英文解码中文语音时，Whisper 不出乱码，而是直接输出通顺的英文译文。现在的做法是：判断为英文时，再用整段复核一次。
-- **停顿处的句号**：早期在每个切段处补"。"，可停顿常在半句话中间。改成补"，"，再交给标点模型统一处理。
-- **标点模型拆开数字**：它会把 3.30 变成"3 . 30"，所以处理完后会把原文里的数字原样放回去。
-- **Metal 编译器要单独装**：Xcode 26 起，Metal 编译器需要单独下载。缺少它时编译会在 MLX 的着色器文件上失败，而且不显示具体原因。
-- **没有开发者证书时的签名**：临时签名（ad-hoc）加上 hardened runtime 时，macOS 会拒绝加载同样是临时签名的标点运行库。build.sh 在没有证书时会自动关掉 hardened runtime。
-
 ## 从源码编译（开发者）
 
-除了上面的系统要求，还需要 Xcode 16 或更新，并装好 Metal 编译器。
+除了"安装"里的系统要求，还需要 Xcode 16 或更新，并装好 Metal 编译器。
 
 ```sh
 # 第一次编译前，安装 Xcode 的 Metal 编译器（约 800 MB）
@@ -119,15 +112,7 @@ xcodebuild -downloadComponent MetalToolchain
   - 标点模型（来自 sherpa-onnx 的 GitHub Releases）
   - Whisper：只有切换到全英文模式时才下载。
 
-## 使用
-
-- **偏好设置**（菜单栏图标 → 偏好设置）：
-  - **快捷键**：可以是组合键（至少一个修饰键），也可以单独按一下 ⌃ ⌥ ⇧ ⌘ 中的一个；F1 到 F12 可以单独使用。
-  - **触发方式**：按一下开始、再按一下结束，或者按住说话、松开结束。
-  - **识别模型**：千问（中文、中英混说）或 Whisper（全英文）。
-  - **录音保留**：见下文"数据与隐私"。
-- **词汇表**：`vocabulary.txt`，每行一个词。转写时会提示给模型，适合专业术语和人名。也可以在历史记录里修改文字后，从建议里添加。
-- **替换规则**：`rules.json`，在历史记录里修改文字后生成，用于固定纠正某个反复出现的错误。
+测试模式和调试用的环境变量见[实验记录](docs/实验记录.md#开发与测试)。
 
 ## 数据与隐私
 
@@ -141,28 +126,6 @@ xcodebuild -downloadComponent MetalToolchain
   - **全部保留**：录音和转写记录都不删。
   - **24 小时后全部删除**：和历史记录一起删掉。
 
-## 开发与测试
-
-测试模式（在编译好的程序上运行）：
-
-```sh
-.build/release/WaveScribe --transcribe a.wav b.wav   # 整段转写
-.build/release/WaveScribe --chunked a.wav b.wav      # 模拟边说边切段，报告停止后的等待时间
-.build/release/WaveScribe --suggest                  # 根据修改记录列出词汇和规则建议
-VT_DATA_DIR=/tmp/copy .build/release/WaveScribe --purge   # 在数据副本上跑一次清理
-```
-
-环境变量：
-
-| 变量 | 作用 |
-|---|---|
-| `VT_ENGINE=qwen` / `whisper` | 临时指定识别模型 |
-| `VT_DEBUG=1` | 打印每段的转写结果和耗时 |
-| `VT_DATA_DIR` | 换一个数据文件夹，比如在副本上测试 |
-| `VT_LANGMODE=zh` / `en` | Whisper 模式下固定语言 |
-| `VT_PROMPT` | Whisper 模式下替换提示词 |
-| `VT_ENC=gpu` / `all` | Whisper 编码器改用 GPU 或全部计算单元 |
-
 ## 致谢
 
 | 项目 | 用途 | 许可 |
@@ -173,10 +136,11 @@ VT_DATA_DIR=/tmp/copy .build/release/WaveScribe --purge   # 在数据副本上�
 | [WhisperKit](https://github.com/argmaxinc/WhisperKit) | Whisper 的 Core ML 实现 | MIT |
 | [FluidAudio](https://github.com/FluidInference/FluidAudio) | Silero VAD 停顿检测 | Apache 2.0 |
 | [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx) | 标点模型运行库 | Apache 2.0 |
+| [Sparkle](https://github.com/sparkle-project/Sparkle) | 应用内自动更新 | MIT |
 | CT-Transformer 标点模型（[FunASR](https://github.com/modelscope/FunASR)） | 中英文标点 | 见 FunASR 的模型许可 |
 
 实验中还用过 SenseVoice、Paraformer（同样来自 FunASR）和 Qwen3 语言模型，最终没有采用。
 
 ## 许可证
 
-[MIT](LICENSE)
+本项目以 [MIT 许可证](LICENSE) 开源，© 2026 ZJ-Gao。用到的模型和第三方库各有自己的许可，见上方"致谢"。
