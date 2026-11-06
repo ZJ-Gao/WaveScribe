@@ -25,6 +25,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         else { NSWorkspace.shared.open(URL(string: "https://github.com/ZJ-Gao/WaveScribe/releases/latest")!) }
     }
 
+    /// The menu under the menu bar icon. Rebuilt when the interface language changes.
+    func buildStatusMenu() {
+        let menu = NSMenu()
+        menu.addItem(withTitle: L("打开窗口", "Open Window"), action: #selector(openTest), keyEquivalent: "t")
+        toggleItem = menu.addItem(withTitle: L("开始/结束录音", "Start/Stop Recording"), action: #selector(toggle), keyEquivalent: "")
+        menu.addItem(.separator())
+        menu.addItem(withTitle: L("偏好设置…", "Preferences…"), action: #selector(openPreferences), keyEquivalent: ",")
+        menu.addItem(withTitle: L("打开数据文件夹", "Open Data Folder"), action: #selector(openData), keyEquivalent: "")
+        menu.addItem(withTitle: L("检查更新…", "Check for Updates…"), action: #selector(checkForUpdates), keyEquivalent: "")
+        menu.addItem(withTitle: L("退出", "Quit"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        for item in menu.items where item.action != #selector(NSApplication.terminate(_:)) { item.target = self }
+        statusItem.menu = menu
+    }
+
+    /// Redraw menus, window titles and window contents in the new language.
+    func languageChanged() {
+        installMainMenu()
+        buildStatusMenu()
+        registerHotkey()
+        prefsWindow?.title = L("偏好设置", "Preferences")
+        testWindow?.title = L("声波转存 WaveScribe", "WaveScribe")
+        testWindow?.contentView = NSHostingView(rootView: TestView(state: state))
+    }
+
     func applicationDidFinishLaunching(_ note: Notification) {
         state = AppState()
         installMainMenu()
@@ -32,16 +56,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         setIcon("mic")
-        let menu = NSMenu()
-        menu.addItem(withTitle: "打开窗口", action: #selector(openTest), keyEquivalent: "t")
-        toggleItem = menu.addItem(withTitle: "开始/结束录音", action: #selector(toggle), keyEquivalent: "")
-        menu.addItem(.separator())
-        menu.addItem(withTitle: "偏好设置…", action: #selector(openPreferences), keyEquivalent: ",")
-        menu.addItem(withTitle: "打开数据文件夹", action: #selector(openData), keyEquivalent: "")
-        menu.addItem(withTitle: "检查更新…", action: #selector(checkForUpdates), keyEquivalent: "")
-        menu.addItem(withTitle: "退出", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
-        for item in menu.items where item.action != #selector(NSApplication.terminate(_:)) { item.target = self }
-        statusItem.menu = menu
+        buildStatusMenu()
 
         let rec = state.recorder
         hud = RecordingHUD(level: { rec.level })
@@ -53,12 +68,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             case .downloading: self?.setIcon("arrow.down.circle"); self?.hud?.hide()
             case .error(let msg):
                 self?.setIcon("exclamationmark.triangle")
-                if msg.contains("麦克风") { self?.hud?.showMessage(msg) } else { self?.hud?.hide() }
+                if msg.contains("麦克风") || msg.localizedCaseInsensitiveContains("microphone") { self?.hud?.showMessage(msg) } else { self?.hud?.hide() }
             case .idle: self?.setIcon("mic"); self?.hud?.hide()
             }
         }
         registerHotkey()
         Settings.shared.onShortcutChange = { [weak self] in self?.registerHotkey() }
+        Settings.shared.onLanguageChange = { [weak self] in self?.languageChanged() }
+        NotificationCenter.default.addObserver(forName: .hudPreview, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { if self?.state.status == .idle { self?.hud?.showPreview() } }
+        }
         Settings.shared.onEngineChange = { [weak self] in Task { await self?.state.engineChanged() } }
 
         AVCaptureDevice.requestAccess(for: .audio) { _ in }
@@ -71,28 +90,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func installMainMenu() {
         let main = NSMenu()
         let appItem = NSMenuItem(); let appMenu = NSMenu(title: "WaveScribe")
-        appMenu.addItem(withTitle: "关于 WaveScribe", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
+        appMenu.addItem(withTitle: L("关于 WaveScribe", "About WaveScribe"), action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
         appMenu.addItem(.separator())
-        appMenu.addItem(withTitle: "偏好设置…", action: #selector(openPreferences), keyEquivalent: ",").target = self
+        appMenu.addItem(withTitle: L("偏好设置…", "Preferences…"), action: #selector(openPreferences), keyEquivalent: ",").target = self
         appMenu.addItem(.separator())
-        appMenu.addItem(withTitle: "隐藏 WaveScribe", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
-        appMenu.addItem(withTitle: "退出 WaveScribe", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        appMenu.addItem(withTitle: L("隐藏 WaveScribe", "Hide WaveScribe"), action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
+        appMenu.addItem(withTitle: L("退出 WaveScribe", "Quit WaveScribe"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         appItem.submenu = appMenu; main.addItem(appItem)
 
-        let editItem = NSMenuItem(); let edit = NSMenu(title: "编辑")
-        edit.addItem(withTitle: "撤销", action: Selector(("undo:")), keyEquivalent: "z")
-        let redo = edit.addItem(withTitle: "重做", action: Selector(("redo:")), keyEquivalent: "z")
+        let editItem = NSMenuItem(); let edit = NSMenu(title: L("编辑", "Edit"))
+        edit.addItem(withTitle: L("撤销", "Undo"), action: Selector(("undo:")), keyEquivalent: "z")
+        let redo = edit.addItem(withTitle: L("重做", "Redo"), action: Selector(("redo:")), keyEquivalent: "z")
         redo.keyEquivalentModifierMask = [.command, .shift]
         edit.addItem(.separator())
-        edit.addItem(withTitle: "剪切", action: #selector(NSText.cut(_:)), keyEquivalent: "x")
-        edit.addItem(withTitle: "拷贝", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
-        edit.addItem(withTitle: "粘贴", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
-        edit.addItem(withTitle: "全选", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+        edit.addItem(withTitle: L("剪切", "Cut"), action: #selector(NSText.cut(_:)), keyEquivalent: "x")
+        edit.addItem(withTitle: L("拷贝", "Copy"), action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+        edit.addItem(withTitle: L("粘贴", "Paste"), action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+        edit.addItem(withTitle: L("全选", "Select All"), action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
         editItem.submenu = edit; main.addItem(editItem)
 
-        let winItem = NSMenuItem(); let win = NSMenu(title: "窗口")
-        win.addItem(withTitle: "最小化", action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")
-        win.addItem(withTitle: "关闭", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
+        let winItem = NSMenuItem(); let win = NSMenu(title: L("窗口", "Window"))
+        win.addItem(withTitle: L("最小化", "Minimize"), action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")
+        win.addItem(withTitle: L("关闭", "Close"), action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
         winItem.submenu = win; main.addItem(winItem)
         NSApp.mainMenu = main
         NSApp.windowsMenu = win
@@ -137,7 +156,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         } else {
             hotkey = Hotkey(keyCode: s.keyCode, modifiers: s.modifiers) { [weak self] in self?.state.toggle() }
         }
-        toggleItem?.title = "开始/结束录音  (\(s.shortcutText))"
+        toggleItem?.title = L("开始/结束录音", "Start/Stop Recording") + "  (\(s.shortcutText))"
     }
 
     func unregisterHotkey() {
@@ -152,7 +171,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 if capturing { self?.unregisterHotkey() } else { self?.registerHotkey() }
             })
             let w = NSWindow(contentViewController: NSHostingController(rootView: view))
-            w.title = "偏好设置"
+            w.title = L("偏好设置", "Preferences")
             w.styleMask = [.titled, .closable]
             w.isReleasedWhenClosed = false
             w.center()
@@ -167,7 +186,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         if testWindow == nil {
             let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 620, height: 560),
                              styleMask: [.titled, .closable, .resizable, .miniaturizable], backing: .buffered, defer: false)
-            w.title = "声波转存 WaveScribe"
+            w.title = L("声波转存 WaveScribe", "WaveScribe")
             w.isReleasedWhenClosed = false
             w.contentView = NSHostingView(rootView: TestView(state: state))
             w.center()

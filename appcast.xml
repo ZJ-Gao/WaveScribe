@@ -3,13 +3,13 @@
   <channel>
     <title>WaveScribe</title>
     <item>
-      <title>WaveScribe 0.1.0</title>
-      <pubDate>Fri, 06 Nov 2026 16:51:25 -0600</pubDate>
-      <sparkle:version>0.1.0</sparkle:version>
-      <sparkle:shortVersionString>0.1.0</sparkle:shortVersionString>
+      <title>WaveScribe 0.2.0</title>
+      <pubDate>Fri, 06 Nov 2026 17:53:40 -0600</pubDate>
+      <sparkle:version>0.2.0</sparkle:version>
+      <sparkle:shortVersionString>0.2.0</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
-      <description><![CDATA[<p>第一个公开版本</p>]]></description>
-      <enclosure url="https://github.com/ZJ-Gao/WaveScribe/releases/download/v0.1.0/WaveScribe.zip" sparkle:edSignature="hJetK3YqpOHo3HhEDiYBO7Ek7oUuqGJ5dxGOPuu0A1lDZ/gYgmMl6TFfhEW21m9+50C4s5vb8783jwheTnzwDw==" length="20447255" type="application/octet-stream"/>
+      <description><![CDATA[<p>界面支持中文和英文（跟随系统，也可在偏好设置里切换）；录音提示窗位置可在九宫格里选择；新增英文 README</p>]]></description>
+      <enclosure url="https://github.com/ZJ-Gao/WaveScribe/releases/download/v0.2.0/WaveScribe.zip" sparkle:edSignature="jMRWJjFFx6BLEgYoC4NODp+pyyy4oVUCA7yXlI3o9sbQwPdG8wLa5fWQTmJKiDmoWXYn3o7tN0SSfjai1H00DQ==" length="20468430" type="application/octet-stream"/>
     </item>
   </channel>
 </rss>

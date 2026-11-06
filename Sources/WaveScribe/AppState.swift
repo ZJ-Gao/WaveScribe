@@ -74,7 +74,7 @@ final class AppState: ObservableObject {
                 await transcriber.scheduleUnload()
                 set(.idle)
             } catch {
-                set(.error("模型下载失败：\(error.localizedDescription)"))
+                set(.error(L("模型下载失败：", "Model download failed: ") + error.localizedDescription))
             }
             return
         }
@@ -96,7 +96,7 @@ final class AppState: ObservableObject {
             }
             set(.idle)
         } catch {
-            set(.error("模型下载失败：\(error.localizedDescription)"))
+            set(.error(L("模型下载失败：", "Model download failed: ") + error.localizedDescription))
         }
     }
 
@@ -143,10 +143,10 @@ final class AppState: ObservableObject {
                       self.recorder.peak <= 0.0005 else { return }
                 _ = self.recorder.stop()
                 self.session?.cancel(); self.session = nil
-                self.set(.error("没有检测到声音，请检查麦克风"))
+                self.set(.error(L("没有检测到声音，请检查麦克风", "No sound detected. Check your microphone.")))
             }
         } catch {
-            set(.error(error is Recorder.NoMicrophone ? "没有检测到麦克风" : "麦克风启动失败：\(error.localizedDescription)"))
+            set(.error(error is Recorder.NoMicrophone ? L("没有检测到麦克风", "No microphone found") : L("麦克风启动失败：", "Microphone failed to start: ") + error.localizedDescription))
         }
     }
 
@@ -157,7 +157,7 @@ final class AppState: ObservableObject {
         guard seconds > 0.3 else { session = nil; set(.idle); return }
         guard peak > 0.0005 else {
             session?.cancel(); session = nil
-            set(.error("没有检测到声音，请检查麦克风"))
+            set(.error(L("没有检测到声音，请检查麦克风", "No sound detected. Check your microphone.")))
             return
         }
         set(.transcribing)
@@ -169,7 +169,7 @@ final class AppState: ObservableObject {
         Task {
             let text = await current?.finish(samples) ?? ""
             let latency = Date().timeIntervalSince(t0)
-            if text.isEmpty { set(.error("没有识别出文字")) } else { set(.idle) }
+            if text.isEmpty { set(.error(L("没有识别出文字", "No speech recognized"))) } else { set(.idle) }
             deliver(text, audio: fileName, seconds: seconds, latency: latency)
             await refreshStats()
         }

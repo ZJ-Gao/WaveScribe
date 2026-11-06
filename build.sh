@@ -38,9 +38,15 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 <key>SUPublicEDKey</key><string>xUIaDeeiBgzklhBqk9RrfMDeZz4XQ+OY192kK/gch8k=</string>
 <key>SUEnableAutomaticChecks</key><true/>
 <key>SUScheduledCheckInterval</key><integer>86400</integer>
-<key>NSMicrophoneUsageDescription</key><string>声波转存需要麦克风来把你的语音转成文字。</string>
+<key>CFBundleDevelopmentRegion</key><string>en</string>
+<key>CFBundleLocalizations</key><array><string>en</string><string>zh-Hans</string></array>
+<key>NSMicrophoneUsageDescription</key><string>WaveScribe uses the microphone to turn your speech into text.</string>
 </dict></plist>
 PLIST
+# Localized permission text (the interface itself switches language in code, see L() in Settings.swift).
+mkdir -p "$APP/Contents/Resources/en.lproj" "$APP/Contents/Resources/zh-Hans.lproj"
+echo '"NSMicrophoneUsageDescription" = "WaveScribe uses the microphone to turn your speech into text.";' > "$APP/Contents/Resources/en.lproj/InfoPlist.strings"
+echo '"NSMicrophoneUsageDescription" = "声波转存需要麦克风来把你的语音转成文字。";' > "$APP/Contents/Resources/zh-Hans.lproj/InfoPlist.strings"
 # Sign with SIGN_IDENTITY, or the first Apple Development certificate. A stable identity keeps the
 # Microphone and Accessibility permissions across rebuilds.
 IDENTITY="${SIGN_IDENTITY:-$(security find-identity -v -p codesigning | awk -F'"' '/Apple Development/ {print $2; exit}')}"

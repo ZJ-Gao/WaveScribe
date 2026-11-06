@@ -12,7 +12,7 @@ final class Recorder {
     private(set) var peak: Float = 0
 
     struct NoMicrophone: LocalizedError {
-        var errorDescription: String? { "没有检测到麦克风" }
+        var errorDescription: String? { L("没有检测到麦克风", "No microphone found") }
     }
 
     func start() throws {

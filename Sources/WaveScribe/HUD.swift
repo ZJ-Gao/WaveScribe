@@ -77,10 +77,33 @@ final class RecordingHUD {
         model.levels = [max(0.1, v)] + Array(model.levels.dropLast())   // newest on the left, flowing right
     }
 
+    /// English labels are longer than Chinese ones, so the pill is wider in English.
+    static var width: CGFloat { Settings.isChinese ? 270 : 330 }
+
+    /// Show the pill for two seconds where it will appear, after the position is changed in Preferences.
+    func showPreview() {
+        model.message = nil
+        model.transcribing = false
+        model.elapsed = 0
+        place()
+        panel.orderFrontRegardless()
+        timer?.invalidate()
+        timer = Timer.scheduledTimer(withTimeInterval: 2, repeats: false) { [weak self] _ in
+            Task { @MainActor in self?.hide() }
+        }
+    }
+
+    /// On the screen with the mouse, at the position chosen in Preferences (bottom centre by default).
     private func place() {
+        panel.setContentSize(NSSize(width: Self.width, height: 44))
         let screen = NSScreen.screens.first { $0.frame.contains(NSEvent.mouseLocation) } ?? NSScreen.main
         guard let f = screen?.visibleFrame else { return }
-        panel.setFrameOrigin(NSPoint(x: f.midX - panel.frame.width / 2, y: f.minY + 24))
+        let pos = HUDPosition.current
+        let margin: CGFloat = 24
+        let w = panel.frame.width, h = panel.frame.height
+        let x = [f.minX + margin, f.midX - w / 2, f.maxX - w - margin][pos.column]
+        let y = [f.maxY - h - margin, f.midY - h / 2, f.minY + margin][pos.row]
+        panel.setFrameOrigin(NSPoint(x: x, y: y))
     }
 }
 
@@ -93,16 +116,16 @@ private struct HUDView: View {
         HStack(spacing: 10) {
             if let message = model.message {
                 Image(systemName: "mic.slash.fill").foregroundStyle(.yellow)
-                Text(message).foregroundStyle(.white)
+                Text(message).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.8)
             } else if model.transcribing {
                 if muyu { Muyu() } else { ProgressView().controlSize(.small).tint(.white) }
-                Text("转写中…").foregroundStyle(.white)
+                Text(L("转写中…", "Transcribing…")).foregroundStyle(.white).lineLimit(1).fixedSize()
             } else {
                 Circle().fill(Color.red).frame(width: 10, height: 10)
                     .opacity(pulse ? 0.35 : 1)
                     .animation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true), value: pulse)
                     .onAppear { pulse = true }
-                Text("正在录音").foregroundStyle(.white)
+                Text(L("正在录音", "Recording")).foregroundStyle(.white).lineLimit(1).fixedSize()
                 HStack(spacing: 2) {
                     ForEach(Array(model.levels.enumerated()), id: \.offset) { _, v in
                         Capsule().fill(Color.white.opacity(0.85)).frame(width: 3, height: 4 + 16 * v)
@@ -111,12 +134,12 @@ private struct HUDView: View {
                 .frame(height: 20)
                 Text(String(format: "%d:%02d", Int(model.elapsed) / 60, Int(model.elapsed) % 60))
                     .monospacedDigit().foregroundStyle(.white.opacity(0.8))
-                Text("esc 取消").font(.system(size: 11)).foregroundStyle(.white.opacity(0.45))
+                Text(L("esc 取消", "esc to cancel")).font(.system(size: 11)).lineLimit(1).fixedSize().foregroundStyle(.white.opacity(0.45))
             }
         }
         .font(.system(size: 13, weight: .medium))
         .padding(.horizontal, 14)
-        .frame(width: 270, height: 44)
+        .frame(width: RecordingHUD.width, height: 44)
         .background(Capsule().fill(Color.black.opacity(0.78)))
     }
 }
@@ -193,3 +216,20 @@ private struct MuyuIcon: View {
     }
 }
 
+
+/// Where the recording pill appears: one cell of a 3 x 3 grid over the screen. Stored as "row,column".
+struct HUDPosition: Equatable {
+    static let key = "hudPosition"
+    static let bottomCenter = HUDPosition(row: 2, column: 1)
+    var row: Int     // 0 top, 1 middle, 2 bottom
+    var column: Int  // 0 left, 1 centre, 2 right
+
+    var raw: String { "\(row),\(column)" }
+    init(row: Int, column: Int) { self.row = row; self.column = column }
+    init?(raw: String) {
+        let p = raw.split(separator: ",").compactMap { Int($0) }
+        guard p.count == 2, (0...2).contains(p[0]), (0...2).contains(p[1]) else { return nil }
+        self.init(row: p[0], column: p[1])
+    }
+    static var current: HUDPosition { UserDefaults.standard.string(forKey: key).flatMap(HUDPosition.init(raw:)) ?? .bottomCenter }
+}
