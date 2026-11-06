@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2B3A8F"/>
+      <stop offset="1" stop-color="#5B2C91"/>
+    </linearGradient>
+    <linearGradient id="ring" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#7FE3FF"/>
+      <stop offset="1" stop-color="#C9B8FF"/>
+    </linearGradient>
+    <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#EEF0F8"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#120A33" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+  <!-- macOS icon grid: 824 x 824 rounded square centred in 1024 -->
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#bg)"/>
+  <!-- three rings, receding left to right -->
+  <g fill="none" stroke="url(#ring)" stroke-linecap="round">
+    <ellipse cx="290" cy="512" rx="62" ry="210" stroke-width="34" opacity="1"/>
+    <ellipse cx="390" cy="512" rx="48" ry="158" stroke-width="27" opacity="0.85"/>
+    <ellipse cx="472" cy="512" rx="35" ry="112" stroke-width="21" opacity="0.7"/>
+  </g>
+  <!-- sheet of paper: top and bottom edges horizontal, leaning toward the rings to catch the sound -->
+  <g transform="translate(688 512) skewX(-7)" filter="url(#shadow)">
+    <rect x="-100" y="-143" width="200" height="286" rx="18" fill="url(#paper)"/>
+    <g stroke-linecap="round" stroke-width="15">
+      <line x1="-66" y1="-93" x2="46" y2="-93" stroke="#5B6CF0"/>
+      <line x1="-66" y1="-50" x2="66" y2="-50" stroke="#B4BAD3"/>
+      <line x1="-66" y1="-7" x2="66" y2="-7" stroke="#B4BAD3"/>
+      <line x1="-66" y1="36" x2="40" y2="36" stroke="#B4BAD3"/>
+      <line x1="-66" y1="79" x2="13" y2="79" stroke="#B4BAD3"/>
+    </g>
+  </g>
+</svg>

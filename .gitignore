@@ -1,0 +1,9 @@
+.build/
+.swiftpm/
+*.app/
+.DS_Store
+# Personal recordings, transcripts, vocabulary and rules stay on this Mac.
+test_data/
+# Prebuilt sherpa-onnx libraries, downloaded by build.sh.
+Vendor/
+dist/
