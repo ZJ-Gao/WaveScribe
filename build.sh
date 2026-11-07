@@ -1,6 +1,8 @@
 #!/bin/zsh
 set -e
 cd "$(dirname "$0")"
+# Version: VERSION, else the latest released one in appcast.xml, so a local build is not offered that same update.
+VERSION="${VERSION:-$(sed -n 's/.*<sparkle:version>\(.*\)<\/sparkle:version>.*/\1/p' appcast.xml 2>/dev/null | head -1)}"
 swift build -c release 2>&1 | grep -E "error|Build complete" || true
 APP="WaveScribe.app"
 rm -rf "$APP"
@@ -47,9 +49,12 @@ PLIST
 mkdir -p "$APP/Contents/Resources/en.lproj" "$APP/Contents/Resources/zh-Hans.lproj"
 echo '"NSMicrophoneUsageDescription" = "WaveScribe uses the microphone to turn your speech into text.";' > "$APP/Contents/Resources/en.lproj/InfoPlist.strings"
 echo '"NSMicrophoneUsageDescription" = "声波转存需要麦克风来把你的语音转成文字。";' > "$APP/Contents/Resources/zh-Hans.lproj/InfoPlist.strings"
-# Sign with SIGN_IDENTITY, or the first Apple Development certificate. A stable identity keeps the
-# Microphone and Accessibility permissions across rebuilds.
-IDENTITY="${SIGN_IDENTITY:-$(security find-identity -v -p codesigning | awk -F'"' '/Apple Development/ {print $2; exit}')}"
+# Sign with SIGN_IDENTITY, else the Developer ID certificate (the one releases use), else Apple Development.
+# macOS ties the Microphone and Accessibility permissions to the signature, so local builds signed like the
+# released app keep those permissions when you switch between the two.
+IDS=$(security find-identity -v -p codesigning)
+IDENTITY="${SIGN_IDENTITY:-$(echo "$IDS" | awk -F'"' '/Developer ID Application/ {print $2; exit}')}"
+[ -n "$IDENTITY" ] || IDENTITY=$(echo "$IDS" | awk -F'"' '/Apple Development/ {print $2; exit}')
 # With a certificate: hardened runtime. Without one (ad-hoc), skip it: its library validation would refuse
 # to load the ad-hoc-signed punctuation libraries.
 if [ -n "$IDENTITY" ] && [ "$IDENTITY" != "-" ]; then RUNTIME=(--options runtime --timestamp); else IDENTITY="-"; RUNTIME=(); fi

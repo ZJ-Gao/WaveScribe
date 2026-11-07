@@ -134,11 +134,13 @@ final class AppState: ObservableObject {
             let rec = recorder
             session = ChunkedSession(transcriber: transcriber, vad: vad, snapshot: { rec.snapshot() })
             session?.start()
-            // A present but dead microphone delivers only silence. Check once after a second,
-            // in the background, so a working microphone loses no time.
+            // A present but dead microphone delivers only silence. Check once in the background, so a working
+            // microphone loses no time. Bluetooth headsets such as AirPods can take a second or two to switch
+            // their microphone on, so they get longer.
             let started = recordStart
+            let wait: UInt64 = Recorder.defaultInputIsBluetooth ? 3_000_000_000 : 1_000_000_000
             Task { @MainActor [weak self] in
-                try? await Task.sleep(nanoseconds: 1_000_000_000)
+                try? await Task.sleep(nanoseconds: wait)
                 guard let self, self.status == .recording, self.recordStart == started,
                       self.recorder.peak <= 0.0005 else { return }
                 _ = self.recorder.stop()

@@ -1,8 +1,12 @@
 import AVFoundation
+import CoreAudio
 
 /// Records microphone audio and returns 16 kHz mono Float samples.
 final class Recorder {
-    private let engine = AVAudioEngine()
+    /// A new engine for each recording, so it uses whatever microphone is the default right now
+    /// (an engine keeps the format of the device it first saw, e.g. 48 kHz built-in vs 16 or 24 kHz AirPods).
+    private var engine = AVAudioEngine()
+    private var configObserver: NSObjectProtocol?
     private var samples: [Float] = []
     private var inputRate: Double = 48000
     private let lock = NSLock()
@@ -19,10 +23,30 @@ final class Recorder {
         lock.lock(); samples.removeAll(); peak = 0; lock.unlock()
         guard AVCaptureDevice.default(for: .audio) != nil,
               AVCaptureDevice.authorizationStatus(for: .audio) != .denied else { throw NoMicrophone() }
+        engine = AVAudioEngine()
+        try startEngine()
+        // Bluetooth headsets switch to a different format (and sometimes device) as recording starts,
+        // which stops the engine. Restart it on the new format and keep what was recorded.
+        if let configObserver { NotificationCenter.default.removeObserver(configObserver) }
+        configObserver = NotificationCenter.default.addObserver(forName: .AVAudioEngineConfigurationChange, object: engine, queue: .main) { [weak self] _ in
+            guard let self else { return }
+            let oldRate = self.inputRate
+            self.engine.inputNode.removeTap(onBus: 0)
+            self.engine.stop()
+            try? self.startEngine()
+            if self.inputRate != oldRate {
+                self.lock.lock()
+                self.samples = Self.resample(self.samples, from: oldRate, to: self.inputRate)
+                self.lock.unlock()
+            }
+        }
+    }
+
+    private func startEngine() throws {
         let input = engine.inputNode
         let format = input.outputFormat(forBus: 0)
         guard format.sampleRate > 0, format.channelCount > 0 else { throw NoMicrophone() }
-        inputRate = format.sampleRate
+        lock.lock(); inputRate = format.sampleRate; lock.unlock()
         input.removeTap(onBus: 0)
         input.installTap(onBus: 0, bufferSize: 4096, format: format) { [weak self] buf, _ in
             guard let self, let ch = buf.floatChannelData?[0] else { return }
@@ -41,15 +65,31 @@ final class Recorder {
 
     /// Audio captured so far, at 16 kHz, without stopping.
     func snapshot() -> [Float] {
-        lock.lock(); let raw = samples; lock.unlock()
-        return Self.resample(raw, from: inputRate, to: 16000)
+        lock.lock(); let raw = samples; let rate = inputRate; lock.unlock()
+        return Self.resample(raw, from: rate, to: 16000)
     }
 
     func stop() -> [Float] {
+        if let configObserver { NotificationCenter.default.removeObserver(configObserver) }
+        configObserver = nil
         engine.inputNode.removeTap(onBus: 0)
         engine.stop()
-        lock.lock(); let raw = samples; samples.removeAll(); lock.unlock()
-        return Self.resample(raw, from: inputRate, to: 16000)
+        lock.lock(); let raw = samples; let rate = inputRate; samples.removeAll(); lock.unlock()
+        return Self.resample(raw, from: rate, to: 16000)
+    }
+
+    /// Whether the current default input is a Bluetooth device (e.g. AirPods).
+    static var defaultInputIsBluetooth: Bool {
+        var device = AudioDeviceID(0)
+        var size = UInt32(MemoryLayout<AudioDeviceID>.size)
+        var addr = AudioObjectPropertyAddress(mSelector: kAudioHardwarePropertyDefaultInputDevice,
+                                              mScope: kAudioObjectPropertyScopeGlobal, mElement: kAudioObjectPropertyElementMain)
+        guard AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &addr, 0, nil, &size, &device) == noErr else { return false }
+        var transport = UInt32(0)
+        size = UInt32(MemoryLayout<UInt32>.size)
+        addr.mSelector = kAudioDevicePropertyTransportType
+        guard AudioObjectGetPropertyData(device, &addr, 0, nil, &size, &transport) == noErr else { return false }
+        return transport == kAudioDeviceTransportTypeBluetooth || transport == kAudioDeviceTransportTypeBluetoothLE
     }
 
     static func resample(_ input: [Float], from: Double, to: Double) -> [Float] {
